@@ -8,7 +8,7 @@ const Page = () => {
 
   useEffect(() => {
     // Redirect to /dashboard/overview
-    router.push("/dashboard/overview");
+    router.push("/dashboard");
   }, [router]);
 
   return <></>;

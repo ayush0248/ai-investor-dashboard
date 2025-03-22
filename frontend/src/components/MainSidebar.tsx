@@ -13,6 +13,9 @@ import {
   Bot,
   BookOpen,
   Wallet,
+  Icon,
+  Calculator,
+  ChartCandlestick ,
 } from "lucide-react";
 
 import { SidebarUpperContent } from "@/components/SidebarUpperContent";
@@ -29,8 +32,8 @@ import {
 
 export const data = {
   user: {
-    name: "Wealth Radar User",
-    email: "user@wealthradar.in",
+    name: "fin-advisor",
+    email: "user@fin-advisor.in",
     avatar: "/avatars/user.jpg",
   },
 
@@ -41,36 +44,25 @@ export const data = {
       icon: BarChart2,
       isActive: true,
       items: [
-        { title: "Overview", url: "/dashboard/overview" },
-        { title: "Budget Planner", url: "/dashboard/budget" },
+        { title: "portfolio", url: "/dashboard/portfolio", Icon:"ChartCandlestick " },
+
       ],
     },
-    {
-      title: "Analytics",
-      url: "/dashboard/analytics",
-      icon: PieChart,
+   
+     {
+      title: "Tax Calculator",
+      url: "/Calculator",
+      icon: Calculator ,
       items: [
-        { title: "Spending Trends", url: "/dashboard/analytics/spending_trends" },
-        { title: "Income Patterns", url: "/dashboard/analytics/income_patterns" },
-        { title: "Auto Classification", url: "/dashboard/analytics/auto_classification" },
+        { title: "Calculator", url: "/dashboard/calculator" },
       ],
     },
     {
-      title: "Payments",
-      url: "/payments",
-      icon: Wallet,
-      items: [
-        { title: "UPI", url: "/dashboard/payments/upi" },
-        { title: "Banks", url: "/dashboard/payments/banks" },
-      ],
-    },
-    {
-      title: "AI & Learning",
-      url: "/ai_learning",
+      title: "Chatbot",
+      url: "/chatbot",
       icon: Bot,
       items: [
-        { title: "AI Chatbot", url: "/ai_chatbot" },
-        { title: "Learning", url: "/learning", icon: BookOpen },
+        { title: "AI Chatbot", url: "/chatbot" },
       ],
     },
     {
@@ -78,9 +70,8 @@ export const data = {
       url: "/settings",
       icon: Settings,
       items: [
-        { title: "Profile", url: "/dashboard/profile", icon: User },
-        { title: "Notifications", url: "/dashboard/settings/notifications", icon: Bell },
-        { title: "Languages", url: "/dashboard/settings/languages", icon: Languages },
+        { title: "Profile", url: "/dashboard/settings/profile", icon: User },
+
       ],
     },
     {
@@ -88,7 +79,7 @@ export const data = {
       url: "/support",
       icon: HelpCircle,
       items: [
-        { title: "Help & Support", url: "/help_support" },
+        { title: "Help & Support", url: "/dashboard/settings/support" },
       ],
     },
   ],

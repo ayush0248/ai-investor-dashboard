@@ -30,7 +30,7 @@ export function Navbar() {
             className="text-sm font-medium text-foreground hover:text-primary transition"
           >
             Dashboard
-          </Link>
+          </Link>  
 
           
         </nav>
