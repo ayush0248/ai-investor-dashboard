@@ -54,7 +54,7 @@ export const data = {
       url: "/Calculator",
       icon: Calculator ,
       items: [
-        { title: "Calculator", url: "/dashboard/calculator" },
+        { title: "Calculator", url: "/dashboard/tax" },
       ],
     },
     {
