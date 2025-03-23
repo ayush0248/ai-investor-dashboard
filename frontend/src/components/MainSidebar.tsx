@@ -62,7 +62,7 @@ export const data = {
       url: "/chatbot",
       icon: Bot,
       items: [
-        { title: "AI Chatbot", url: "/chatbot" },
+        { title: "AI Chatbot", url: "/dashboard/chatbot" },
       ],
     },
     {
