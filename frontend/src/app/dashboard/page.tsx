@@ -1,17 +1,10 @@
-"use client";
+import EnhancedStockDashboard from "@/components/enhanced-stock-dashboard"
 
-import { useEffect } from "react";
-import { useRouter } from "next/navigation";
+export default function DashboardExample() {
+  return (
+    <div className="container mx-auto py-6 px-4">
+      <EnhancedStockDashboard />
+    </div>
+  )
+}
 
-const Page = () => {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Redirect to /dashboard/overview
-    router.push("/dashboard");
-  }, [router]);
-
-  return <></>;
-};
-
-export default Page;
