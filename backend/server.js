@@ -1,54 +1,125 @@
-const express = require('express');
-const cors = require('cors');
-const dotenv = require('dotenv');
-
-dotenv.config();
+require("dotenv").config();
+const express = require("express");
+const mongoose = require("mongoose");
+const cors = require("cors");
+const admin = require("firebase-admin");
+const fs = require("fs");
 
 const app = express();
-const port = process.env.PORT || 3001;
-
-app.use(cors());
 app.use(express.json());
+app.use(cors());
 
-// Finance-related responses
-const financeResponses = {
-  hello: [
-    "Hello! I'm your finance assistant. How can I help you today?",
-    "Hi there! I can help you with financial questions. What would you like to know?"
-  ],
-  investment: [
-    "Investing is a great way to grow your wealth over time. Consider diversifying your portfolio across different asset classes.",
-    "Before investing, make sure to research thoroughly and understand your risk tolerance."
-  ],
-  savings: [
-    "Start by creating a budget and setting aside a portion of your income regularly.",
-    "Consider opening a high-yield savings account for better interest rates."
-  ],
-  default: [
-    "I'm not sure about that. Could you please rephrase your question?",
-    "I can help you with basic financial advice. Try asking about investments, savings, or budgeting."
-  ]
+// ✅ Check if MONGO_URI is properly set
+if (!process.env.MONGO_URI) {
+  console.error("❌ Error: MONGO_URI is not set in .env file");
+  process.exit(1);
+}
+
+// ✅ Firebase Admin SDK Initialization
+const serviceAccountPath = "./firebaseServiceAccountKey.json";
+if (!fs.existsSync(serviceAccountPath)) {
+  console.error("❌ Error: Firebase service account key file is missing");
+  process.exit(1);
+}
+
+try {
+  const serviceAccount = require(serviceAccountPath);
+  admin.initializeApp({
+    credential: admin.credential.cert(serviceAccount),
+  });
+  console.log("✅ Firebase Admin SDK initialized");
+} catch (error) {
+  console.error("❌ Firebase Admin SDK Initialization Error:", error);
+  process.exit(1);
+}
+
+// ✅ MongoDB Connection
+mongoose
+  .connect(process.env.MONGO_URI, { useNewUrlParser: true, useUnifiedTopology: true })
+  .then(() => console.log("✅ MongoDB Connected"))
+  .catch((err) => {
+    console.error("❌ MongoDB Connection Error:", err);
+    process.exit(1);
+  });
+
+// ✅ Profile Schema
+const profileSchema = new mongoose.Schema({
+  email: { type: String, required: true, unique: true },
+  firstName: String,
+  lastName: String,
+  dob: String,
+  mobileNumber: String,
+  address: String,
+  aadhaarNumber: String,
+  panCardNumber: String,
+  bankAccountNumber: String,
+  ifscCode: String,
+});
+
+const Profile = mongoose.model("Profile", profileSchema);
+
+// ✅ Middleware to Verify Firebase Token
+const verifyFirebaseToken = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization;
+    if (!authHeader || !authHeader.startsWith("Bearer ")) {
+      return res.status(401).json({ error: "Unauthorized: No token provided" });
+    }
+
+    const token = authHeader.split(" ")[1]; // Extract token
+    const decodedToken = await admin.auth().verifyIdToken(token);
+    req.user = decodedToken;
+    next();
+  } catch (error) {
+    console.error("❌ Firebase Token Verification Error:", error);
+    return res.status(403).json({ error: "Unauthorized: Invalid token" });
+  }
 };
 
-app.post('/api/chat', (req, res) => {
-  const { message } = req.body;
-  const userMessage = message.toLowerCase();
-  
-  let response;
-  
-  if (userMessage.match(/^(hello|hi|hey)/i)) {
-    response = financeResponses.hello[Math.floor(Math.random() * financeResponses.hello.length)];
-  } else if (userMessage.match(/(invest|investment|stock|market)/i)) {
-    response = financeResponses.investment[Math.floor(Math.random() * financeResponses.investment.length)];
-  } else if (userMessage.match(/(save|saving|money|budget)/i)) {
-    response = financeResponses.savings[Math.floor(Math.random() * financeResponses.savings.length)];
-  } else {
-    response = financeResponses.default[Math.floor(Math.random() * financeResponses.default.length)];
+// ✅ Fetch User Profile (No need to pass email, it's in the token)
+app.get("/api/profile", verifyFirebaseToken, async (req, res) => {
+  try {
+    const email = req.user.email; // Extract from Firebase token
+    const profile = await Profile.findOne({ email });
+
+    if (!profile) {
+      return res.status(404).json({ error: "Profile not found" });
+    }
+
+    res.json(profile);
+  } catch (error) {
+    console.error("❌ Error Fetching Profile:", error);
+    res.status(500).json({ error: "Failed to fetch profile" });
   }
-
-  res.json({ response });
 });
 
-app.listen(port, () => {
-  console.log(`Server running on port ${port}`);
+// ✅ Save or Update Profile
+app.post("/api/profile", verifyFirebaseToken, async (req, res) => {
+  try {
+    const email = req.user.email; // Extract from Firebase token
+    const { firstName, lastName, dob, mobileNumber, address, aadhaarNumber, panCardNumber, bankAccountNumber, ifscCode } = req.body;
+
+    let profile = await Profile.findOne({ email });
+
+    if (profile) {
+      // Update existing profile
+      await Profile.updateOne(
+        { email },
+        { firstName, lastName, dob, mobileNumber, address, aadhaarNumber, panCardNumber, bankAccountNumber, ifscCode }
+      );
+      return res.json({ message: "Profile updated successfully" });
+    } else {
+      // Create new profile
+      profile = new Profile({ email, firstName, lastName, dob, mobileNumber, address, aadhaarNumber, panCardNumber, bankAccountNumber, ifscCode });
+      await profile.save();
+      return res.status(201).json({ message: "Profile created successfully" });
+    }
+  } catch (error) {
+    console.error("❌ Error Saving Profile:", error);
+    res.status(500).json({ error: "Failed to save profile" });
+  }
 });
+
+// ✅ Start Server
+const PORT = process.env.PORT || 5000;
+app.listen(PORT, () => console.log(`🚀 Server running on port ${PORT}`));

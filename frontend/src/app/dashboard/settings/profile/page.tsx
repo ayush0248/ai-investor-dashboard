@@ -1,5 +1,6 @@
 "use client";
-import React, { useState } from "react";
+import React, { ChangeEvent, useEffect, useState } from "react";
+import { getAuth, onAuthStateChanged } from "firebase/auth";
 import { Card, CardContent, CardFooter } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
@@ -9,56 +10,82 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { Separator } from "@/components/ui/separator";
 import { Pencil, Save, User } from "lucide-react";
 
-interface ProfileData {
-  firstName: string;
-  lastName: string;
-  email: string;
-  phone: string;
-  mobile: string;
-  dob: string;
-  address: string;
-  website: string;
-  aboutMe: string;
-  aadhaar: string;
-  pan: string;
-  upiId: string;
-  bankAccount: string;
-  ifscCode: string;
-}
-
-const ProfilePage: React.FC = () => {
+const ProfilePage = () => {
+  const auth = getAuth();
   const [isEditing, setIsEditing] = useState(false);
-  const [profileData, setProfileData] = useState<ProfileData>({
-    firstName: "John",
-    lastName: "Doe",
-    email: "john.doe@example.com",
-    phone: "123-456-7890",
-    mobile: "987-654-3210",
-    dob: "1990-01-01",
-    address: "123 Main Street, City, State, 12345",
-    website: "johndoe.com",
-    aboutMe: "Professional with 5+ years of experience",
-    aadhaar: "1234 5678 9012",
-    pan: "ABCDE1234F",
-    upiId: "johndoe@upi",
-    bankAccount: "12345678901234",
-    ifscCode: "ABCD0001234",
+  const [userEmail, setUserEmail] = useState("");
+  const [profileData, setProfileData] = useState({
+    firstName: "",
+    lastName: "",
+    email: "",
+    mobile: "",
+    dob: "",
+    address: "",
+    aadhaar: "",
+    pan: "",
+    bankAccount: "",
+    ifscCode: "",
   });
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
-  ) => {
-    const { id, value } = e.target;
-    setProfileData((prev) => ({
-      ...prev,
-      [id]: value,
-    }));
+  // ✅ Fetch user profile data
+  useEffect(() => {
+    const fetchProfile = async (email: string | null) => {
+      if (!email) return;
+      try {
+        const response = await fetch(`http://localhost:5000/api/profile?email=${email}`, {
+          headers: { Accept: "application/json" },
+        });
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch profile");
+        }
+        const data = await response.json();
+        setProfileData(data);
+      } catch (error) {
+        console.error("❌ Error fetching profile:", error);
+      }
+    };
+
+    onAuthStateChanged(auth, (user) => {
+      if (user) {
+        setUserEmail(user.email || "");
+        fetchProfile(user.email);
+      }
+    });
+  }, []);
+
+  // ✅ Handle Save Profile
+  const handleSave = async () => {
+    try {
+      const response = await fetch("http://localhost:5000/api/profile", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Accept: "application/json",
+        },
+        body: JSON.stringify(profileData),
+      });
+
+      if (!response.ok) {
+        throw new Error("Failed to update profile");
+      }
+
+      const result = await response.json();
+      alert(result.message || "Profile updated successfully!");
+      setIsEditing(false);
+    } catch (error) {
+      console.error("❌ Error updating profile:", error);
+    }
   };
 
-  const handleSave = () => {
-    console.log("Saving profile data:", profileData);
-    setIsEditing(false);
-  };
+  // ✅ Handle Input Changes
+  function handleInputChange(event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) {
+    const { id, value } = event.target;
+    setProfileData((prevData) => ({
+      ...prevData,
+      [id]: value,
+    }));
+  }
 
   return (
     <div className="py-8 px-6">
@@ -69,15 +96,7 @@ const ProfilePage: React.FC = () => {
           onClick={() => (isEditing ? handleSave() : setIsEditing(true))}
           className="flex gap-2 items-center"
         >
-          {isEditing ? (
-            <>
-              <Save className="h-4 w-4" /> Save Profile
-            </>
-          ) : (
-            <>
-              <Pencil className="h-4 w-4" /> Edit Profile
-            </>
-          )}
+          {isEditing ? <><Save className="h-4 w-4" /> Save</> : <><Pencil className="h-4 w-4" /> Edit</>}
         </Button>
       </div>
 
@@ -87,13 +106,9 @@ const ProfilePage: React.FC = () => {
             <div className="flex flex-col items-center gap-4">
               <Avatar className="h-24 w-24">
                 <AvatarImage src="" alt="Profile" />
-                <AvatarFallback className="text-2xl">
-                  <User className="h-12 w-12" />
-                </AvatarFallback>
+                <AvatarFallback className="text-2xl"><User className="h-12 w-12" /></AvatarFallback>
               </Avatar>
-              {isEditing && (
-                <Button variant="outline" size="sm">Change Photo</Button>
-              )}
+              {isEditing && <Button variant="outline" size="sm">Change Photo</Button>}
             </div>
 
             <div className="flex-1">
@@ -112,7 +127,7 @@ const ProfilePage: React.FC = () => {
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
                 <div className="space-y-2">
                   <Label htmlFor="email">Email</Label>
-                  <Input id="email" type="email" value={profileData.email} onChange={handleInputChange} disabled={!isEditing} />
+                  <Input id="email" type="email" value={userEmail} disabled />
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="mobile">Mobile Number</Label>
@@ -141,22 +156,6 @@ const ProfilePage: React.FC = () => {
               <Label htmlFor="pan">PAN Card Number</Label>
               <Input id="pan" value={profileData.pan} onChange={handleInputChange} disabled={!isEditing} />
             </div>
-          </div>
-          
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-            <div className="space-y-2">
-              <Label htmlFor="upiId">UPI ID</Label>
-              <Input id="upiId" value={profileData.upiId} onChange={handleInputChange} disabled={!isEditing} />
-            </div>
-            <div className="space-y-2">
-              <Label htmlFor="bankAccount">Bank Account Number</Label>
-              <Input id="bankAccount" value={profileData.bankAccount} onChange={handleInputChange} disabled={!isEditing} />
-            </div>
-          </div>
-          
-          <div className="space-y-2 mb-6">
-            <Label htmlFor="ifscCode">IFSC Code</Label>
-            <Input id="ifscCode" value={profileData.ifscCode} onChange={handleInputChange} disabled={!isEditing} />
           </div>
         </CardContent>
 
