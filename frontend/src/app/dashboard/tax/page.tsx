@@ -13,10 +13,7 @@ export default function TaxDashboard() {
           🧮 Calculate Your Taxes
         </Link>
 
-        {/* Link to Tax Summary */}
-        <Link href="/dashboard/tax/taxsummary" className="block bg-green-500 text-white p-4 rounded-lg shadow-lg hover:bg-green-600 transition">
-          📊 View Tax Summary
-        </Link>
+       
       </div>
     </div>
   );
